@@ -1,0 +1,23 @@
+﻿{
+	"FileVersion": 3,
+	"Version": 0.1.0,
+	"VersionName": "1.0",
+	"FriendlyName": "DreamAccount",
+	"Description": "Account servies",
+	"Category": "Other",
+	"CreatedBy": "Dream Moon",
+	"CreatedByURL": "https://dmstudio.top",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "DreamAccount",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
