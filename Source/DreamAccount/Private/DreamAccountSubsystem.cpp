@@ -1,15 +1,17 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright 2025 Dream Moon. All Rights Reserved.
 
 
 #include "DreamAccountSubsystem.h"
 
 #include "DreamAccountSettings.h"
 #include "DreamAccountUtil.h"
-#include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 
-void UDreamAccountSubsystem::UserRegister(FDreamAccountUser User, FOnAccountResult OnResult)
+using namespace FDreamAccountAPI;
+using namespace FDreamAccountFields;
+
+void UDreamAccountSubsystem::UserRegister(FDreamAccountInfo User, FOnAccountResult OnResult)
 {
 	auto Callback = [OnResult](const FDreamAccountResult& Result)
 	{
@@ -23,42 +25,40 @@ void UDreamAccountSubsystem::UserRegister(FDreamAccountUser User, FOnAccountResu
 }
 
 
-void UDreamAccountSubsystem::UserRegister_Internal(FDreamAccountUser User, FDreamAccountResultCallback Callback)
+void UDreamAccountSubsystem::UserRegister_Internal(FDreamAccountInfo User, FDreamAccountResultCallback Callback)
 {
-	if (User.UserName.IsEmpty() || User.UserPassword.IsEmpty())
+	if (User.Name.IsEmpty() || User.Password.IsEmpty())
 	{
-		Callback(FDreamAccountResult(EDreamAccountResultType::Register, TEXT(""), TEXT("Username and password cannot be empty"), FDreamAccountUser()));
+		Callback(FDreamAccountResult(
+			EDreamAccountResultType::Register,
+			EDreamAccountErrorType::LOCAL_INPUT_DATA_NOT_VALID,
+			FDreamAccountUser()));
 		return;
 	}
 
 	const UDreamAccountSettings* Settings = UDreamAccountSettings::Get();
 	if (!Settings)
 	{
-		Callback(FDreamAccountResult(EDreamAccountResultType::Register, TEXT(""), TEXT("Account settings not available"), FDreamAccountUser()));
+		Callback(FDreamAccountResult(
+			EDreamAccountResultType::Register,
+			EDreamAccountErrorType::LOCAL_INPUT_DATA_NOT_VALID,
+			FDreamAccountUser()));
 		return;
 	}
-
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-	JsonObject->SetStringField(TEXT("user_name"), User.UserName);
-	JsonObject->SetStringField(TEXT("user_password"), User.UserPassword);
-
-	FString JsonString;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonString);
-	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
 
 	TMap<FString, FString> Headers;
 	Headers.Add(TEXT("Content-Type"), TEXT("application/json;charset=UTF-8"));
 
 	FDreamAccountUtil::SendHttpRequest(
-		Settings->AccountServerApiURL + TEXT("/api/account/register"),
+		API_REGISTER,
 		TEXT("POST"),
-		JsonString,
+		User.Serialize(),
 		Headers,
 		[Callback](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 		{
 			if (!bWasSuccessful || !Response.IsValid())
 			{
-				Callback(FDreamAccountResult(EDreamAccountResultType::Register, TEXT(""), TEXT("Network request failed"), FDreamAccountUser()));
+				Callback(FDreamAccountResult(EDreamAccountResultType::Register, EDreamAccountErrorType::NETWORK_ERROR, FDreamAccountUser()));
 				return;
 			}
 
@@ -69,23 +69,14 @@ void UDreamAccountSubsystem::UserRegister_Internal(FDreamAccountUser User, FDrea
 			}
 
 			TSharedPtr<FJsonObject> Json = FDreamAccountUtil::ParseJsonFromResponse(Response);
-			FDreamAccountUser ResultUser;
-			if (Json.IsValid())
-			{
-				const TSharedPtr<FJsonObject>* UserObj;
-				if (Json->TryGetObjectField(TEXT("user"), UserObj))
-				{
-					ResultUser = FDreamAccountUser(UserObj);
-				}
-			}
+			FDreamAccountUser ResultUser = FDreamAccountUtil::ParseAccountUserFromJson(Json);
 
-			FString Message = Json.IsValid() ? Json->GetStringField(TEXT("message")) : TEXT("");
-			Callback(FDreamAccountResult(EDreamAccountResultType::Register, Message, TEXT("NORMAL"), ResultUser));
+			Callback(FDreamAccountResult(EDreamAccountResultType::Register, EDreamAccountErrorType::NORMAL, ResultUser));
 		});
 }
 
 
-void UDreamAccountSubsystem::UserLogin(FDreamAccountUser User, FOnAccountResult OnResult)
+void UDreamAccountSubsystem::UserLogin(FDreamAccountInfo User, FOnAccountResult OnResult)
 {
 	auto Callback = [OnResult](const FDreamAccountResult& Result)
 	{
@@ -99,43 +90,34 @@ void UDreamAccountSubsystem::UserLogin(FDreamAccountUser User, FOnAccountResult 
 }
 
 
-void UDreamAccountSubsystem::UserLogin_Internal(FDreamAccountUser User, FDreamAccountResultCallback Callback)
+void UDreamAccountSubsystem::UserLogin_Internal(FDreamAccountInfo User, FDreamAccountResultCallback Callback)
 {
-	if (User.UserName.IsEmpty() || User.UserPassword.IsEmpty())
+	if (User.Name.IsEmpty() || User.Password.IsEmpty())
 	{
-		Callback(FDreamAccountResult(EDreamAccountResultType::Login, TEXT(""), TEXT("Username and password cannot be empty"), FDreamAccountUser()));
+		Callback(FDreamAccountResult(EDreamAccountResultType::Login, EDreamAccountErrorType::LOCAL_INPUT_DATA_NOT_VALID, FDreamAccountUser()));
 		return;
 	}
 
 	const UDreamAccountSettings* Settings = UDreamAccountSettings::Get();
 	if (!Settings)
 	{
-		Callback(FDreamAccountResult(EDreamAccountResultType::Login, TEXT(""), TEXT("Account settings not available"), FDreamAccountUser()));
+		Callback(FDreamAccountResult(EDreamAccountResultType::Login, EDreamAccountErrorType::LOCAL_INPUT_DATA_NOT_VALID, FDreamAccountUser()));
 		return;
 	}
-
-	// 构造 JSON 请求体
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-	JsonObject->SetStringField(TEXT("user_name"), User.UserName);
-	JsonObject->SetStringField(TEXT("user_password"), User.UserPassword);
-
-	FString JsonString;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonString);
-	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
 
 	TMap<FString, FString> Headers;
 	Headers.Add(TEXT("Content-Type"), TEXT("application/json;charset=UTF-8"));
 
 	FDreamAccountUtil::SendHttpRequest(
-		Settings->AccountServerApiURL + TEXT("/api/account/login"),
+		API_LOGIN,
 		TEXT("POST"),
-		JsonString,
+		User.Serialize(),
 		Headers,
 		[this, Callback](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 		{
 			if (!bWasSuccessful || !Response.IsValid())
 			{
-				Callback(FDreamAccountResult(EDreamAccountResultType::Login, TEXT(""), TEXT("Network request failed"), FDreamAccountUser()));
+				Callback(FDreamAccountResult(EDreamAccountResultType::Login, EDreamAccountErrorType::NETWORK_ERROR, FDreamAccountUser()));
 				return;
 			}
 
@@ -147,31 +129,20 @@ void UDreamAccountSubsystem::UserLogin_Internal(FDreamAccountUser User, FDreamAc
 
 			TSharedPtr<FJsonObject> Json = FDreamAccountUtil::ParseJsonFromResponse(Response);
 
-			FDreamAccountUser LoggedInUser;
-			FString Token;
-
-			if (Json.IsValid())
-			{
-				const TSharedPtr<FJsonObject>* UserObject;
-				if (Json->TryGetObjectField(TEXT("user"), UserObject))
-				{
-					LoggedInUser = FDreamAccountUser(UserObject);
-				}
-				Json->TryGetStringField(TEXT("token"), Token);
-			}
+			FDreamAccountUser LoggedInUser = FDreamAccountUtil::ParseAccountUserFromJson(Json);
+			FString Token = FDreamAccountUtil::ParseTokenFromJson(Json);
 
 			if (!Token.IsEmpty())
 			{
 				SetToken(Token);
 			}
 
-			FString Message = Json.IsValid() ? Json->GetStringField(TEXT("message")) : TEXT("");
-			Callback(FDreamAccountResult(EDreamAccountResultType::Login, Message, TEXT("NORMAL"), LoggedInUser, Token));
+			Callback(FDreamAccountResult(EDreamAccountResultType::Login, EDreamAccountErrorType::NORMAL, LoggedInUser, Token));
 		});
 }
 
 
-void UDreamAccountSubsystem::AuthToken(FOnAccountResult OnResult)
+void UDreamAccountSubsystem::AuthenticationToken(FOnAccountResult OnResult)
 {
 	auto Callback = [OnResult](const FDreamAccountResult& Result)
 	{
@@ -181,18 +152,17 @@ void UDreamAccountSubsystem::AuthToken(FOnAccountResult OnResult)
 		}
 	};
 
-	AuthToken_Internal(Callback);
+	AuthenticationToken_Internal(Callback);
 }
 
 
-void UDreamAccountSubsystem::AuthToken_Internal(FDreamAccountResultCallback Callback)
+void UDreamAccountSubsystem::AuthenticationToken_Internal(FDreamAccountResultCallback Callback)
 {
 	if (Token.IsEmpty())
 	{
 		Callback(FDreamAccountResult(
 			EDreamAccountResultType::Auth,
-			TEXT(""),
-			TEXT("No token available for authentication"),
+			EDreamAccountErrorType::LOCAL_TOKEN_NOT_VALID,
 			FDreamAccountUser()));
 		return;
 	}
@@ -202,26 +172,23 @@ void UDreamAccountSubsystem::AuthToken_Internal(FDreamAccountResultCallback Call
 	{
 		Callback(FDreamAccountResult(
 			EDreamAccountResultType::Auth,
-			TEXT(""),
-			TEXT("Account settings not available"),
+			EDreamAccountErrorType::LOCAL_TOKEN_NOT_VALID,
 			FDreamAccountUser()));
 		return;
 	}
 
 	TMap<FString, FString> Headers;
-	Headers.Add(TEXT("Content-Type"), TEXT("application/json;charset=UTF-8"));
 	Headers.Add(TEXT("Authorization"), FString::Printf(TEXT("Bearer %s"), *Token));
 
 	FDreamAccountUtil::SendHttpRequest(
-		Settings->AccountServerApiURL + TEXT("/api/account/auth"),
+		API_AUTH,
 		TEXT("GET"),
-		TEXT(""), // No body for GET
 		Headers,
 		[Callback](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 		{
 			if (!bWasSuccessful || !Response.IsValid())
 			{
-				Callback(FDreamAccountResult(EDreamAccountResultType::Auth, TEXT(""), TEXT("Network request failed"), FDreamAccountUser()));
+				Callback(FDreamAccountResult(EDreamAccountResultType::Auth, EDreamAccountErrorType::NETWORK_ERROR, FDreamAccountUser()));
 				return;
 			}
 
@@ -233,16 +200,9 @@ void UDreamAccountSubsystem::AuthToken_Internal(FDreamAccountResultCallback Call
 
 			TSharedPtr<FJsonObject> Json = FDreamAccountUtil::ParseJsonFromResponse(Response);
 
-			FDreamAccountUser AuthUser;
-			if (Json.IsValid())
-			{
-				Json->TryGetStringField(TEXT("user_name"), AuthUser.UserName);
-				Json->TryGetNumberField(TEXT("user_id"), AuthUser.UserID);
-			}
+			FDreamAccountUser AuthUser = FDreamAccountUtil::ParseAccountUserFromJson(Json);
 
-			FString Message = Json.IsValid() ? Json->GetStringField(TEXT("message")) : TEXT("");
-
-			Callback(FDreamAccountResult(EDreamAccountResultType::Auth, Message, TEXT("NORMAL"), AuthUser));
+			Callback(FDreamAccountResult(EDreamAccountResultType::Auth, EDreamAccountErrorType::NORMAL, AuthUser));
 		});
 }
 

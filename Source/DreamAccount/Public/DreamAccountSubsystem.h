@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright 2025 Dream Moon. All Rights Reserved.
 
 #pragma once
 
@@ -46,7 +46,7 @@ public:
 	 * @param OnResult 注册完成后的回调函数。
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DreamAccount|Users")
-	void UserRegister(FDreamAccountUser User, FOnAccountResult OnResult);
+	void UserRegister(FDreamAccountInfo User, FOnAccountResult OnResult);
 
 	/**
 	 * @brief 内部实现版本的用户注册方法。
@@ -54,7 +54,7 @@ public:
 	 * @param User 需要注册的用户信息。
 	 * @param Callback 注册完成后的回调函数。
 	 */
-	void UserRegister_Internal(FDreamAccountUser User, FDreamAccountResultCallback Callback);
+	void UserRegister_Internal(FDreamAccountInfo User, FDreamAccountResultCallback Callback);
 
 	/**
 	 * @brief 用户登录。
@@ -63,7 +63,7 @@ public:
 	 * @param OnResult 登录完成后的回调函数。
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DreamAccount|Users")
-	void UserLogin(FDreamAccountUser User, FOnAccountResult OnResult);
+	void UserLogin(FDreamAccountInfo User, FOnAccountResult OnResult);
 
 	/**
 	 * @brief 内部实现版本的用户登录方法。
@@ -71,7 +71,7 @@ public:
 	 * @param User 登录所需的用户信息。
 	 * @param Callback 登录完成后的回调函数。
 	 */
-	void UserLogin_Internal(FDreamAccountUser User, FDreamAccountResultCallback Callback);
+	void UserLogin_Internal(FDreamAccountInfo User, FDreamAccountResultCallback Callback);
 
 	/**
 	 * @brief 对当前已登录用户进行身份验证（使用 Token）。
@@ -79,14 +79,14 @@ public:
 	 * @param OnResult 验证完成后的回调函数。
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DreamAccount|Users|Auth")
-	void AuthToken(FOnAccountResult OnResult);
+	void AuthenticationToken(FOnAccountResult OnResult);
 
 	/**
 	 * @brief 内部实现版本的身份验证方法。
 	 *
 	 * @param Callback 验证完成后的回调函数。
 	 */
-	void AuthToken_Internal(FDreamAccountResultCallback Callback);
+	void AuthenticationToken_Internal(FDreamAccountResultCallback Callback);
 
 	/**
 	 * @brief 用户登出，清除本地保存的用户状态。

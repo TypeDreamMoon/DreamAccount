@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Copyright 2025 Dream Moon. All Rights Reserved.
 
 #pragma once
 
@@ -21,8 +21,7 @@ public:
 
 public:
 	static UDreamAccountSettings* Get();
-
-
+	
 	/**
 	 * AccountServerApiURL - 配置账号服务器API的URL地址
 	 * 
@@ -30,5 +29,8 @@ public:
 	 * 支持蓝图读写操作，并且会保存到配置文件中。
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Config)
-	FString AccountServerApiURL = TEXT("https://api.xxx.com");
+	FString AccountServerURL = TEXT("https://api.xxx.com");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Config)
+	float TimeoutTime = 5.0f;
 };

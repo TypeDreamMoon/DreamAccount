@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2025 Dream Moon. All Rights Reserved.
+
+#pragma once
 
 #include "CoreMinimal.h"
 #include "DreamAccountTypes.generated.h"
@@ -6,6 +8,7 @@
 struct FDreamAccountUser;
 struct FDreamAccountResult;
 enum class EDreamAccountResultType : uint8;
+enum class EDreamAccountErrorType : uint8;
 
 using FDreamAccountResultCallback = TFunction<void(const FDreamAccountResult&)>;
 
@@ -24,6 +27,55 @@ enum class EDreamAccountResultType : uint8
 	Auth, // 认证操作
 };
 
+/**
+ * @brief 账户错误类型枚举类
+ * 
+ * 定义了账户相关操作可能出现的各种错误类型，用于标识和处理用户账户操作中的异常情况。
+ * 该枚举类可在蓝图中使用，每个枚举值都配有显示名称以便在UI中展示。
+ */
+UENUM(BlueprintType)
+enum class EDreamAccountErrorType : uint8
+{
+	UNKNOWN UMETA(DisplayName = "Unknown Error"), // 未知错误
+	NORMAL UMETA(DisplayName = "Normal"), // 没有错误
+
+	// 网络错误
+	NETWORK_MISSING_FIELDS UMETA(DisplayName = "Missing Fields"), // 缺少必填字段
+	NETWORK_INVALID_USERNAME UMETA(DisplayName = "Invalid Username"), // 用户名格式不正确
+	NETWORK_INVALID_PASSWORD UMETA(DisplayName = "Invalid Password"), // 密码格式不正确
+	NETWORK_USERNAME_EXISTS UMETA(DisplayName = "Username Exists"), // 用户名已存在
+	NETWORK_TOO_MANY_REQUESTS UMETA(DisplayName = "Too Many Requests"), // 请求过于频繁，请稍后再试
+	NETWORK_USER_NOT_FOUND UMETA(DisplayName = "User Not Found"), // 用户不存在
+	NETWORK_INVALID_CREDENTIALS UMETA(DisplayName = "Invalid Credentials"), // 用户名或密码错误
+	NETWORK_USER_BANNED UMETA(DisplayName = "User Banned"), // 您的账号已被封禁
+	NETWORK_BAN_NOT_FOUND UMETA(DisplayName = "Ban Not Found"), // 未找到封禁记录
+	NETWORK_USER_NOT_AUTHENTICATED UMETA(DisplayName = "User Not Authenticated"), // 未提供认证 Token
+	NETWORK_INVALID_AUTH_HEADER UMETA(DisplayName = "Invalid Auth Header"), // 错误的认证头格式，应为 Bearer <token>
+	NETWORK_INVALID_TOKEN UMETA(DisplayName = "Invalid Token"), // 无效或已过期的 Token
+	NETWORK_INTERNAL_ERROR UMETA(DisplayName = "Internal Error"), // 服务器内部错误，请稍后重试
+	NETWORK_VALIDATION_ERROR UMETA(DisplayName = "Validation Error"), // 数据验证失败
+	NETWORK_ERROR UMETA(DisplayName = "Network Error"), // 网络错误
+
+	// 本地错误
+	LOCAL_INPUT_DATA_NOT_VALID UMETA(DisplayName = "Input Data Not Valid"), // 输入数据错误
+	LOCAL_TOKEN_NOT_VALID UMETA(DisplayName = "Token Not Valid"), // 令牌无效
+};
+
+USTRUCT(BlueprintType)
+struct FDreamAccountInfo
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString Name;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString Password;
+
+public:
+	FString Serialize() const;
+};
 
 /**
  * FDreamAccountUser 结构体
@@ -65,25 +117,13 @@ public:
 	FDreamAccountUser(const TSharedPtr<FJsonObject>* InUserJsonObject);
 
 public:
-	/** 用户名 */
+	/** 用户基本信息 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString UserName = FString();
-
-	/** 用户密码 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString UserPassword = FString();
+	FDreamAccountInfo UserInfo;
 
 	/** 用户ID，默认值为9999 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 UserID = 9999;
-
-	/** 用户登录禁用标志，true表示禁用登录 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bUserLoginDisable = false;
-
-	/** 用户登录禁用原因，默认为"normal login" */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString UserLoginDisableReason = TEXT("normal login");
 };
 
 
@@ -115,12 +155,10 @@ public:
 	 * 用于创建注册操作的结果对象
 	 * 
 	 * @param InResultType 操作结果类型枚举值
-	 * @param InMessage 操作返回的消息信息
-	 * @param InErrorReason 错误原因描述
 	 * @param InUser 账户用户信息对象
 	 */
-	FDreamAccountResult(EDreamAccountResultType InResultType, FString InMessage, FString InErrorReason, FDreamAccountUser InUser)
-		: ResultType(InResultType), Message(InMessage), ErrorReason(InErrorReason), User(InUser), bIsValidResult(true)
+	FDreamAccountResult(EDreamAccountResultType InResultType, EDreamAccountErrorType InErrorType, FDreamAccountUser InUser)
+		: ResultType(InResultType), ErrorType(InErrorType), User(InUser), bIsValidResult(true)
 	{
 	}
 
@@ -130,13 +168,12 @@ public:
 	 * 用于创建登录操作的结果对象，包含访问令牌
 	 * 
 	 * @param InResultType 操作结果类型枚举值
-	 * @param InMessage 操作返回的消息信息
-	 * @param InErrorReason 错误原因描述
+	 * @param InErrorType 错误类型
 	 * @param InUser 账户用户信息对象
 	 * @param InToken 访问令牌字符串
 	 */
-	FDreamAccountResult(EDreamAccountResultType InResultType, FString InMessage, FString InErrorReason, FDreamAccountUser InUser, FString InToken)
-		: ResultType(InResultType), Message(InMessage), ErrorReason(InErrorReason), User(InUser), Token(InToken), bIsValidResult(true)
+	FDreamAccountResult(EDreamAccountResultType InResultType, EDreamAccountErrorType InErrorType, FDreamAccountUser InUser, FString InToken)
+		: ResultType(InResultType), ErrorType(InErrorType), User(InUser), Token(InToken), bIsValidResult(true)
 	{
 	}
 
@@ -145,13 +182,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EDreamAccountResultType ResultType = EDreamAccountResultType::None;
 
-	/** 操作返回的消息信息，通常包含操作结果的描述 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString Message = TEXT("");
-
-	/** 错误原因描述，默认值为"normal login" */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString ErrorReason = TEXT("normal login");
+	EDreamAccountErrorType ErrorType = EDreamAccountErrorType::UNKNOWN;
 
 	/** 账户用户信息对象，包含用户的基本信息 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

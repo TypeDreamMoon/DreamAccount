@@ -1,4 +1,4 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright 2025 Dream Moon. All Rights Reserved.
 
 #include "DreamAccountModule.h"
 
@@ -40,5 +40,5 @@ void FDreamAccountModule::ShutdownModule()
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+
 IMPLEMENT_MODULE(FDreamAccountModule, DreamAccount)

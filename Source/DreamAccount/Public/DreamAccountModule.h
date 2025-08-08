@@ -1,4 +1,4 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright 2025 Dream Moon. All Rights Reserved.
 
 #pragma once
 
@@ -8,7 +8,6 @@
 class FDreamAccountModule : public IModuleInterface
 {
 public:
-
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
