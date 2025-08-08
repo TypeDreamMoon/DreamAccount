@@ -13,7 +13,7 @@ UDreamAccountAsyncAction_UserRegister* UDreamAccountAsyncAction_UserRegister::Us
 {
 	CREATE_NODE()
 	Node->Info = User;
-	Node->Subsystem = UGameplayStatics::GetGameInstance(WorldContextObject)->GetSubsystem<UDreamAccountSubsystem>();
+	Node->Subsystem = GEngine->GetEngineSubsystem<UDreamAccountSubsystem>();
 	Node->RegisterWithGameInstance(WorldContextObject);
 	return Node;
 }
@@ -46,7 +46,7 @@ UDreamAccountAsyncAction_UserLogin* UDreamAccountAsyncAction_UserLogin::UserLogi
 {
 	CREATE_NODE()
 	Node->Info = User;
-	Node->Subsystem = UGameplayStatics::GetGameInstance(WorldContextObject)->GetSubsystem<UDreamAccountSubsystem>();
+	Node->Subsystem = GEngine->GetEngineSubsystem<UDreamAccountSubsystem>();
 	Node->RegisterWithGameInstance(WorldContextObject);
 	return Node;
 }
@@ -78,7 +78,7 @@ void UDreamAccountAsyncAction_UserLogin::Activate()
 UDreamAccountAsyncAction_UserAuthentication* UDreamAccountAsyncAction_UserAuthentication::UserAuthentication(UObject* WorldContextObject)
 {
 	CREATE_NODE()
-	Node->Subsystem = UGameplayStatics::GetGameInstance(WorldContextObject)->GetSubsystem<UDreamAccountSubsystem>();
+	Node->Subsystem =GEngine->GetEngineSubsystem<UDreamAccountSubsystem>();
 	Node->RegisterWithGameInstance(WorldContextObject);
 	return Node;
 }
