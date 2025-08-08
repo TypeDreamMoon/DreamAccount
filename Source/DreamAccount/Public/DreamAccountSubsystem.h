@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/GameInstanceSubsystem.h"
+#include "Subsystems/EngineSubsystem.h"
 #include "DreamAccountTypes.h"
 #include "DreamAccountSubsystem.generated.h"
 
@@ -11,11 +11,11 @@
  * @class UDreamAccountSubsystem
  * @brief 账户子系统，用于处理用户注册、登录、认证和登出等账户相关操作。
  *
- * 该类继承自 UGameInstanceSubsystem，作为游戏实例中的一个子系统运行，
+ * 该类继承自 UEngineSubsystem，作为引擎中的一个子系统运行，
  * 提供与账户服务交互的接口，并管理当前用户的认证令牌。
  */
 UCLASS()
-class DREAMACCOUNT_API UDreamAccountSubsystem : public UGameInstanceSubsystem
+class DREAMACCOUNT_API UDreamAccountSubsystem : public UEngineSubsystem
 {
 	GENERATED_BODY()
 
